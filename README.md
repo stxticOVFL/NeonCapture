@@ -1,7 +1,7 @@
 # NeonCapture
 ### Your OBS Neon White clipping companion! A non-intrusive, minimal OBS mod for Neon White.
 
-![image](https://github.com/stxticOVFL/NeonCapture/assets/29069561/ba5c10cc-8c82-4e68-94c3-549d00cd4d8f)
+![image](https://github.com/stxticOVFL/NeonCapture/assets/29069561/23c71631-7f6b-4acf-a594-02d8db1df86d)
 
 ## Features
 - Seamless, transparent connection with [OBS](https://obsproject.com/) through the WebSocket server
