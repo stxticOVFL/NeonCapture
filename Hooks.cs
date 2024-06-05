@@ -12,10 +12,6 @@ namespace NeonCapture
     [HarmonyPatch]
     public class Hooks
     {
-        public static LevelData queuedLevel = null;
-        public static bool queuedArchive;
-        public static bool queuedRestart;
-
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(LevelData), typeof(bool), typeof(bool))]
         private static void PlayLevel(LevelData newLevel, bool fromArchive, bool fromRestart)
