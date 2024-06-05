@@ -14,9 +14,9 @@ namespace NeonCapture
     {
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(LevelData), typeof(bool), typeof(bool))]
-        private static void PlayLevel(LevelData newLevel, bool fromArchive, bool fromRestart)
+        private static void PlayLevel(LevelData newLevel, bool fromRestart)
         {
-            if (!NC.manager || !NC.manager.ready || !newLevel) return;
+            if (!NC.manager || !NC.manager.ready || !newLevel || !NC.Settings.EnableRecord.Value) return;
 
             if (newLevel.type == LevelData.LevelType.None || newLevel.type == LevelData.LevelType.Hub)
             {
@@ -50,7 +50,7 @@ namespace NeonCapture
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(string), typeof(bool), typeof(Action))]
-        private static void PlayLevel(string newLevelID, bool fromArchive) => PlayLevel(Singleton<Game>.Instance.GetGameData().GetLevelData(newLevelID), fromArchive, false);
+        private static void PlayLevel(string newLevelID) => PlayLevel(Singleton<Game>.Instance.GetGameData().GetLevelData(newLevelID), false);
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(LevelGate), "OnTriggerStay")]
@@ -103,7 +103,7 @@ namespace NeonCapture
 
         static public bool WaitingForRecord()
         {
-            if (!NC.manager || !NC.manager.ready || !NC.Settings.StallLoad.Value) return false;
+            if (!NC.manager || !NC.manager.ready || !NC.Settings.EnableRecord.Value || !NC.Settings.StallLoad.Value) return false;
             return !NC.manager.recording;
         }
 
@@ -112,14 +112,14 @@ namespace NeonCapture
         static IEnumerable<CodeInstruction> LevelSetupPatch(IEnumerable<CodeInstruction> instructions)
         {
             int index = 0;
-            var ghostLoading = AccessTools.PropertyGetter(typeof(GhostPlayback), "IsLoadingData");
+            var rmUI = AccessTools.Field(typeof(RM), "ui");
             CodeInstruction branch = null;
             foreach (var (code, i) in instructions.Select((value, i) => (value, i)))
             {
-                // find first (and only) GhostPlayback.IsLoadingData
-                if (code.Calls(ghostLoading))
+                // find first (and only) RM.ui reference
+                if (code.LoadsField(rmUI))
                 {
-                    index = i + 1; // keep track of the index directly *after* (it's a branch)
+                    index = i + 3; // keep track of the instruction 3 *after* (it's a branch)
                     break;
                 }
             }
