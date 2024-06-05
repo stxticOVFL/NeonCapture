@@ -34,5 +34,5 @@ using MelonLoader;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: MelonInfo(typeof(NeonCapture.NeonCapture), "NeonCapture", "1.0.0", "stxticOVFL")]
+[assembly: MelonInfo(typeof(NeonCapture.NeonCapture), "NeonCapture", "1.1.1", "stxticOVFL")]
 [assembly: MelonGame("Little Flag Software, LLC", "Neon White")]
