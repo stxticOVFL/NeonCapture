@@ -2,18 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using UnityEngine;
 using NC = NeonCapture.NeonCapture;
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 namespace NeonCapture
 {
     [HarmonyPatch]
     public class Hooks
     {
+        public static LevelData queuedLevel = null;
+        public static bool queuedArchive;
+        public static bool queuedRestart;
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(LevelData), typeof(bool), typeof(bool))]
-        private static void PlayLevel(LevelData newLevel, bool fromRestart)
+        private static void PlayLevel(LevelData newLevel, bool fromArchive, bool fromRestart)
         {
             if (!NC.manager || !NC.manager.ready || !newLevel) return;
+
             if (newLevel.type == LevelData.LevelType.None || newLevel.type == LevelData.LevelType.Hub)
             {
                 if (NC.manager.recording)
@@ -27,7 +35,11 @@ namespace NeonCapture
                     {
                         if (NC.Settings.OnRestart.Value || NC.manager.queuedPath != null)
                         {
-                            NC.manager.usedBonus ??= NC.Settings.ManualType.Value;
+                            if (NC.manager.usedBonus == null)
+                            {
+                                NC.manager.usedBonus = NC.Settings.ManualType.Value;
+                                NC.manager.time = Singleton<Game>.Instance.GetCurrentLevelTimerMicroseconds();
+                            }
                             NC.manager.SaveVideo();
                         }
                         else
@@ -42,7 +54,7 @@ namespace NeonCapture
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(string), typeof(bool), typeof(Action))]
-        private static void PlayLevel(string newLevelID) => PlayLevel(Singleton<Game>.Instance.GetGameData().GetLevelData(newLevelID), false);
+        private static void PlayLevel(string newLevelID, bool fromArchive) => PlayLevel(Singleton<Game>.Instance.GetGameData().GetLevelData(newLevelID), fromArchive, false);
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(LevelGate), "OnTriggerStay")]
@@ -79,17 +91,55 @@ namespace NeonCapture
             bool patched = false;
             var changed = instructions.Select((code, index) =>
             {
+                // count to 13 calls
                 if (code.Calls(method))
                 {
                     patched = ++count == 13;
+                    // patch the level rush function to call elsewhere
                     if (patched)
                         return CodeInstruction.Call(() => LevelCompleteOverride()).MoveLabelsFrom(code);
                 }
                 return code;
             });
 
-            //throw new Exception($"HAIII {log}");
             return changed;
+        }
+
+        static public bool WaitingForRecord()
+        {
+            if (!NC.manager || !NC.manager.ready || !NC.Settings.StallLoad.Value) return false;
+            return !NC.manager.recording;
+        }
+
+        [HarmonyTranspiler]
+        [HarmonyPatch(typeof(Game), "LevelSetupRoutine", MethodType.Enumerator)]
+        static IEnumerable<CodeInstruction> LevelSetupPatch(IEnumerable<CodeInstruction> instructions)
+        {
+            int index = 0;
+            var ghostLoading = AccessTools.PropertyGetter(typeof(GhostPlayback), "IsLoadingData");
+            CodeInstruction branch = null;
+            foreach (var (code, i) in instructions.Select((value, i) => (value, i)))
+            {
+                // find first (and only) GhostPlayback.IsLoadingData
+                if (code.Calls(ghostLoading))
+                {
+                    index = i + 1; // keep track of the index directly *after* (it's a branch)
+                    break;
+                }
+            }
+
+            foreach (var (code, i) in instructions.Select((value, i) => (value, i)))
+            {
+                if (i == index) // if we're that index we kept trakcof earlier
+                    branch = code; // remember it, we'll be borrowing it on:
+                else if (branch != null) // the very next instruction
+                {
+                    yield return CodeInstruction.Call(() => WaitingForRecord()); // call waitforrecord, pushing it directly on the stack
+                    yield return branch; // same branch from earlier, branch if true to spinning
+                    branch = null;
+                }
+                yield return code;
+            }
         }
     }
 }

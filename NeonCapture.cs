@@ -1,4 +1,4 @@
-﻿using MelonLoader;
+using MelonLoader;
 using UniverseLib.Input;
 using UnityEngine;
 using NeonCapture.Objects;
@@ -27,6 +27,7 @@ namespace NeonCapture
             if (InputManager.GetKeyDown(Settings.EarlyFinish.Value))
             {
                 manager.usedBonus ??= Settings.ManualType.Value;
+                manager.time = Singleton<Game>.Instance.GetCurrentLevelTimerMicroseconds();
                 manager.SaveVideo();
             }
         }
@@ -37,6 +38,7 @@ namespace NeonCapture
 
             public static MelonPreferences_Entry<bool> Enabled;
             public static MelonPreferences_Entry<bool> EnableRecord;
+            public static MelonPreferences_Entry<bool> StallLoad;
             public static MelonPreferences_Entry<int> Port;
             public static MelonPreferences_Entry<string> Password;
             public static MelonPreferences_Entry<bool> GhostDir;
@@ -55,12 +57,14 @@ namespace NeonCapture
             public static MelonPreferences_Entry<bool> StartAlert;
             public static MelonPreferences_Entry<bool> AutoAlert;
 
+
             public static void Register()
             {
                 MainCategory = MelonPreferences.CreateCategory("NeonCapture");
 
                 Enabled = MainCategory.CreateEntry("Enabled", false, description: "REQUIRES RESTART!");
                 EnableRecord = MainCategory.CreateEntry("Enable Recording", true);
+                StallLoad = MainCategory.CreateEntry("Stall Loading", true, description: "Wait to load the level until recording has started. This ensures everything's captured.\nDisable this if your load times are unreasonably long.");
                 Port = MainCategory.CreateEntry("Port", 4455);
                 Password = MainCategory.CreateEntry("Password", "", description: "Your OBS Websockets password, if required. Be careful about sharing this!");
                 AutoSeconds = MainCategory.CreateEntry("Seconds until Auto-save", 3, description: "How many seconds to wait after leaderboard screen/DNF to automatically save the recording.\nSet to -1 to disable.");
@@ -70,7 +74,7 @@ namespace NeonCapture
                 NonPBs = MainCategory.CreateEntry("Save recording on non-PBs", false);
                 OnRestart = MainCategory.CreateEntry("Save recording on all restarts", false);
 
-                OutputFile = MainCategory.CreateEntry("Output File Format", "Neon White/%L - %T - %B", description: """
+                OutputFile = MainCategory.CreateEntry("Output File Format", "Neon White/%L/%B/%d - %T", description: """
                 What to name the output file. The file extension will be automatically added. The format is as follows:
                 %% - Actual %
                 %l - Unlocalized level name, e.g. GRID_PORT
@@ -79,12 +83,12 @@ namespace NeonCapture
                 %T - Time in just seconds + milliseconds, e.g. 80.030
                 %D - Formatted date/time, e.g. 2024-03-31 21-50-17
                 %d - Unformatted date/time, e.g. 20240331215017 (good for sorting!)
-                %B - The type, as listed by the settings below.
+                %B - The type, as listed by the settings below
                 """);
 
-                PBType = MainCategory.CreateEntry("PB Format String", "PB");
-                DNFType = MainCategory.CreateEntry("DNF Format String", "DNF");
-                NoPBType = MainCategory.CreateEntry("Non-PB Format String", "Non-PB");
+                PBType = MainCategory.CreateEntry("PB Format String", "PBs");
+                DNFType = MainCategory.CreateEntry("DNF Format String", "DNFs");
+                NoPBType = MainCategory.CreateEntry("Non-PB Format String", "Non-PBs");
                 ManualType = MainCategory.CreateEntry("Manual Format String", "Manual");
 
                 GhostDir = MainCategory.CreateEntry("Use Ghost Directory", false, description: "Whether or not to place new recordings in their respective ghost directories or to keep the current video directory.");

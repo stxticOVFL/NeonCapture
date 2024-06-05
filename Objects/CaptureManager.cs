@@ -139,8 +139,9 @@ namespace NeonCapture.Objects
             float size = 1f / 1080 * Screen.height;
             statusText.transform.position = new(10f / 1920 * Screen.width, -_moveY.result / 1080 * Screen.height);
             statusText.transform.localScale = new(size, size, 1);
-            statusText.faceColor = Color.black.Alpha(_opacityT.result);
-            statusText.outlineColor = statusColor.Alpha(_opacityT.result);
+            statusText.faceColor = Color.black;
+            statusText.outlineColor = statusColor;
+            statusText.alpha = _opacityT.result;
             _moveY.Process();
             _opacityT.Process();
             if (!_moveY.running && statusTimer > 0)
@@ -166,8 +167,8 @@ namespace NeonCapture.Objects
                 recordTimer -= Time.unscaledDeltaTime;
                 if (recordTimer <= 0)
                 {
-                    recordTimer = .1f;
-                    Send(PrepareRequest("StartRecord"));
+                    recordTimer = .05f;
+                    SendStartRecord();
                 }
             }
         }
@@ -221,7 +222,16 @@ namespace NeonCapture.Objects
             if (waitForSave)
                 readyToRecord = true;
             else
-                Send(PrepareRequest("StartRecord"));
+                SendStartRecord();
+        }
+
+        public void SendStartRecord()
+        {
+            if (Settings.StallLoad.Value)
+                SetStatus("Waiting for OBS...");
+            else
+                ClearStatus();
+            Send(PrepareRequest("StartRecord")); 
         }
 
         static readonly char[] replacements = ['%', 'l', 'L', 't', 'T', 'm', 'd', 'D', 'B'];
@@ -231,7 +241,6 @@ namespace NeonCapture.Objects
                 return;
             if (bonus != null)
                 usedBonus = bonus;
-            Send(PrepareRequest("GetRecordDirectory")); // just to make sure we have it
             var filename = Settings.OutputFile.Value;
             // based loosely off of neonlite's formatting since it's the quickest i have access to regarding C#
             // https://github.com/MOPSKATER/NeonLite/blob/main/Modules/DiscordActivity.cs#L180
@@ -311,6 +320,7 @@ namespace NeonCapture.Objects
             packet.data["requestId"] = new ProxyString($"{queuedPrefix}|{queuedPath}");
             queuedPath = null;
             queuedPrefix = null;
+            usedBonus = null;
             endingTimer = 0;
             recording = false;
             waitForSave = true;
@@ -323,6 +333,10 @@ namespace NeonCapture.Objects
                 return;
             OBSPacket packet = PrepareRequest("StopRecord");
             packet.data["requestId"] = new ProxyString("discard");
+            queuedPath = null;
+            queuedPrefix = null;
+            usedBonus = null;
+            endingTimer = 0;
             recording = false;
             waitForSave = true;
             Send(packet);
@@ -331,14 +345,26 @@ namespace NeonCapture.Objects
         public void SetStatus(string status) => SetStatus(status, Color.white);
         public void SetStatus(string status, Color color)
         {
-            Debug.Log($"Status: {status}");
+            if (status != statusText.text)
+                Debug.Log($"Status: {status}");
             statusText.text = status;
             statusColor = color;
             statusTimer = 3;
             if (_moveY.goal != 10)
                 _moveY.Start(null, 10);
             if (_opacityT.goal != 1)
-                _opacityT.Start(0, 1);
+                _opacityT.Start(null, 1);
+        }
+
+        public void ClearStatus()
+        {
+            _moveY.goal = _moveY.result = 20;
+            _moveY.time = 0;
+            _moveY.running = false;
+            _opacityT.goal = _opacityT.result = 0;
+            _opacityT.time = 0;
+            _opacityT.running = false;
+            statusTimer = 0;
         }
 
         public async void ParseResponse(OBSPacket response)
@@ -364,14 +390,14 @@ namespace NeonCapture.Objects
 
                         message.data["rpcVersion"] = new ProxyNumber(1);
                         message.data["eventSubscriptions"] = new ProxyNumber(1 << 6);
-                        Send(message);
+                        await Send(message);
                         return;
                     }
                 case OBSInfo.Opcodes.Identified:
                     {
                         ready = true;
                         SetStatus("Sucessfully identified with OBS!");
-                        Send(PrepareRequest("GetRecordDirectory"));
+                        await Send(PrepareRequest("GetRecordDirectory"));
                         return;
                     }
                 case OBSInfo.Opcodes.Event:
@@ -381,12 +407,17 @@ namespace NeonCapture.Objects
                             case "RecordStateChanged":
                                 {
                                     if (recordRecieved && response.data["eventData"]["outputState"] == "OBS_WEBSOCKET_OUTPUT_STARTING")
+                                    {
+                                        ClearStatus();
                                         recordRecieved = false;
+                                    }
                                     if (response.data["eventData"]["outputState"] == "OBS_WEBSOCKET_OUTPUT_STARTED")
                                     {
                                         recordRecieved = false;
                                         recording = true;
                                         potentialOut = response.data["eventData"]["outputPath"];
+                                        ClearStatus();
+                                        Send(PrepareRequest("GetRecordDirectory")); // just to make sure we have it for later
                                         if (Settings.StartAlert.Value)
                                             SetStatus("Recording started!");
                                     }
@@ -420,7 +451,7 @@ namespace NeonCapture.Objects
                                         else if (readyToRecord)
                                         {
                                             readyToRecord = false;
-                                            Send(PrepareRequest("StartRecord"));
+                                            SendStartRecord();
                                         }
                                         return;
                                     }
@@ -438,7 +469,6 @@ namespace NeonCapture.Objects
                                         post += $" ({index})";
                                     }
 
-                                    Debug.Log($"{realSave} {full + ext}");
                                     tries = 20;
                                     Directory.CreateDirectory(Path.GetDirectoryName(full + ext));
                                     while (tries-- != 0)
@@ -461,7 +491,7 @@ namespace NeonCapture.Objects
                                     else if (readyToRecord)
                                     {
                                         readyToRecord = false;
-                                        Send(PrepareRequest("StartRecord"));
+                                        SendStartRecord();
                                     }
                                     return;
                                 }
@@ -477,13 +507,16 @@ namespace NeonCapture.Objects
                                     if (!response.data["requestStatus"]["result"])
                                     {
                                         ProxyObject statData = response.data["requestStatus"] as ProxyObject;
-                                        string error = statData.Keys.Contains("comment") ? statData["comment"] : ((OBSInfo.RequestStatus)(int)statData["code"]).ToString();
-                                        SetStatus($"OBS failed to start recording: {error}", errorColor);
+                                        if ((OBSInfo.RequestStatus)(int)statData["code"] != OBSInfo.RequestStatus.OutputRunning)
+                                        {
+                                            string error = statData.Keys.Contains("comment") ? statData["comment"] : ((OBSInfo.RequestStatus)(int)statData["code"]).ToString();
+                                            SetStatus($"OBS failed to start recording: {error}", errorColor);
+                                        }
                                         return;
                                     }
                                     recording = false;
+                                    recordTimer = .05f;
                                     recordRecieved = true;
-                                    recordTimer = .1f;
                                     return;
                                 }
                             case "StopRecord":
@@ -536,7 +569,7 @@ namespace NeonCapture.Objects
             Debug.Log($"Sending {JSON.Dump(message, EncodeOptions.NoTypeHints)}..");
 
             await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
-            Debug.Log("Sent.");
+            Debug.Log($"Sent.");
             return;
         }
 
