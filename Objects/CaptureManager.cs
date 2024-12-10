@@ -84,6 +84,7 @@ namespace NeonCapture.Objects
         public string queuedPath;
         public string queuedPrefix;
         public string usedBonus;
+        public string usedSteamIcon;
         public LevelData level; // just to make sure we have itLevelData level;
         public bool recording;
         string responseID;
@@ -107,6 +108,8 @@ namespace NeonCapture.Objects
 
         static readonly Color errorColor = new Color32(209, 61, 62, 255);
 
+        public float recordingTimer = -1;
+
         public void Awake()
         {
             NeonCapture.manager = this;
@@ -123,7 +126,7 @@ namespace NeonCapture.Objects
             (statusText.transform as RectTransform).pivot = new(0, 0);
             statusText.margin = new Vector4(100, 0, -2000, 0);
             statusText.fontSize = 24;
-            statusText.font = Resources.Load<TMP_FontAsset>("fonts/source code pro/SourceCodePro-Black SDF");
+            statusText.font = UnityEngine.Resources.Load<TMP_FontAsset>("fonts/source code pro/SourceCodePro-Black SDF");
             statusText.outlineWidth = 0.15f;
             statusText.alignment = TextAlignmentOptions.TopLeft;
 
@@ -131,7 +134,18 @@ namespace NeonCapture.Objects
             _opacityT.result = 0;
             Update();
 
-            Connect();
+            if (Settings.UseSteam.Value)
+            {
+                if (NeonCapture.timelinesAble)
+                {
+                    ready = true;
+                    SetStatus("Steam timelines initialized!");
+                }
+                else
+                    SetStatus("Steam timelines failed to initialize.", errorColor);
+            }
+            else
+                Connect();
         }
 
         public void Update()
@@ -160,7 +174,7 @@ namespace NeonCapture.Objects
                 if (endingTimer <= 0)
                     SaveVideo();
                 else if (endingTimer <= 3 && Settings.AutoAlert.Value)
-                    SetStatus($"Auto-save in {(int)endingTimer + 1}...");
+                    SetStatus($"Auto-clip in {(int)endingTimer + 1}...");
             }
             if (recordRecieved)
             {
@@ -171,6 +185,8 @@ namespace NeonCapture.Objects
                     SendStartRecord();
                 }
             }
+            if (recordingTimer >= 0)
+                recordingTimer += Time.unscaledDeltaTime;
         }
 
         bool closing = false;
@@ -227,20 +243,32 @@ namespace NeonCapture.Objects
 
         public void SendStartRecord()
         {
-            if (Settings.StallLoad.Value)
+            if (Settings.StallLoad.Value && !Settings.UseSteam.Value)
                 SetStatus("Waiting for OBS...");
             else
                 ClearStatus();
-            Send(PrepareRequest("StartRecord")); 
+
+            if (!Settings.UseSteam.Value)
+                Send(PrepareRequest("StartRecord"));
+            else
+            {
+                recordRecieved = false;
+                recording = true;
+                recordingTimer = 0;
+                if (Settings.StartAlert.Value)
+                    SetStatus("Clip started!");
+            }
         }
 
         static readonly char[] replacements = ['%', 'l', 'L', 't', 'T', 'm', 'd', 'D', 'B'];
-        public void QueueVideo(string bonus = null)
+        public void QueueVideo(string bonus = null, string steamIcon = null)
         {
             if (!ready)
                 return;
             if (bonus != null)
                 usedBonus = bonus;
+            if (steamIcon != null)
+                usedSteamIcon = steamIcon;
             var filename = Settings.OutputFile.Value;
             // based loosely off of neonlite's formatting since it's the quickest i have access to regarding C#
             // https://github.com/MOPSKATER/NeonLite/blob/main/Modules/DiscordActivity.cs#L180
@@ -278,7 +306,6 @@ namespace NeonCapture.Objects
                                 // edit: the format is **SUPER** bugged holy shit
                                 long ms = Utils.ConvertMicrosecondsToMilliseconds(time);
                                 newFile.Append($"{(int)Utils.ConvertMillisecondsToSeconds_Float(ms):##00}.{ms % 1000:000}");
-
                                 break;
                             }
                         case 'D':
@@ -315,16 +342,33 @@ namespace NeonCapture.Objects
                 return;
             if (queuedPath == null)
                 QueueVideo();
-            SetStatus($"Saving to {queuedPath}...");
             OBSPacket packet = PrepareRequest("StopRecord");
             packet.data["requestId"] = new ProxyString($"{queuedPrefix}|{queuedPath}");
             queuedPath = null;
             queuedPrefix = null;
-            usedBonus = null;
             endingTimer = 0;
             recording = false;
-            waitForSave = true;
-            Send(packet);
+            if (Settings.UseSteam.Value)
+            {
+                string localized = LocalizationManager.GetTranslation(Singleton<Game>.Instance.GetCurrentLevel().GetLevelDisplayName());
+                long ms = Utils.ConvertMicrosecondsToMilliseconds(time);
+                string timeFormat = $"{(int)Utils.ConvertMillisecondsToSeconds_Float(ms):##00}.{ms % 1000:000}";
+                waitForSave = false;
+
+                SteamTimeline.AddTimelineEvent(usedSteamIcon, $"{localized} - {timeFormat} ({usedBonus})", "", 0, -recordingTimer, recordingTimer,
+                    usedSteamIcon == "steam_star" ?
+                        ETimelineEventClipPriority.k_ETimelineEventClipPriority_Featured :
+                        ETimelineEventClipPriority.k_ETimelineEventClipPriority_Standard);
+                SetStatus("Clip saved to timeline!");
+            }
+            else
+            {
+                waitForSave = true;
+                SetStatus($"Saving to {queuedPath}...");
+                Send(packet);
+            }
+            usedBonus = null;
+            recordingTimer = -1;
         }
 
         public void DiscardVideo()
@@ -338,8 +382,12 @@ namespace NeonCapture.Objects
             usedBonus = null;
             endingTimer = 0;
             recording = false;
-            waitForSave = true;
-            Send(packet);
+            if (!Settings.UseSteam.Value)
+            {
+                waitForSave = true;
+                Send(packet);
+            }
+            recordingTimer = -1;
         }
 
         public void SetStatus(string status) => SetStatus(status, Color.white);

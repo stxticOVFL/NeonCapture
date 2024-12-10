@@ -1,0 +1,3 @@
+[submodule "DLLFromMemory-net"]
+	path = DLLFromMemory-net
+	url = https://github.com/schellingb/DLLFromMemory-net

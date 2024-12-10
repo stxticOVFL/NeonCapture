@@ -72,11 +72,30 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DLLFromMemory.cs" />
     <Compile Include="Hooks.cs" />
     <Compile Include="NeonCapture.cs" />
     <Compile Include="OBSInfo.cs" />
+    <Compile Include="Resources\r.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>r.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SteamNatives.cs" />
     <Compile Include="Objects\CaptureManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\r.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>r.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SteamworksInterop.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetPath) "C:\Program Files (x86)\Steam\steamapps\common\Neon White\Mods"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

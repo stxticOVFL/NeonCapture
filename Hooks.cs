@@ -16,7 +16,9 @@ namespace NeonCapture
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(LevelData), typeof(bool), typeof(bool))]
         private static void PlayLevel(LevelData newLevel, bool fromRestart)
         {
-            if (!NC.manager || !NC.manager.ready || !newLevel || !NC.Settings.EnableRecord.Value) return;
+            if (!NC.manager || !NC.manager.ready || !newLevel || (!NC.Settings.EnableRecord.Value && !NC.Settings.UseSteam.Value)) return;
+            if (NC.Settings.UseSteam.Value)
+                SteamTimeline.SetTimelineGameMode(ETimelineGameMode.k_ETimelineGameMode_LoadingScreen);
 
             if (newLevel.type == LevelData.LevelType.None || newLevel.type == LevelData.LevelType.Hub)
             {
@@ -34,6 +36,7 @@ namespace NeonCapture
                             if (NC.manager.usedBonus == null)
                             {
                                 NC.manager.usedBonus = NC.Settings.ManualType.Value;
+                                NC.manager.usedSteamIcon = "steam_marker";
                                 NC.manager.time = Singleton<Game>.Instance.GetCurrentLevelTimerMicroseconds();
                             }
                             NC.manager.SaveVideo();
@@ -61,7 +64,7 @@ namespace NeonCapture
             if (__instance.Unlocked)
                 return;
             if (NC.Settings.OnDNF.Value && NC.manager.recording && NC.manager.queuedPath == null)
-                NC.manager.QueueVideo(NC.Settings.DNFType.Value);
+                NC.manager.QueueVideo(NC.Settings.DNFType.Value, "steam_timer");
         }
 
         static bool LevelCompleteOverride()
@@ -73,7 +76,7 @@ namespace NeonCapture
 
             NC.manager.time = stats._timeLastMicroseconds;
             if (NC.Settings.NonPBs.Value || stats.IsNewBest())
-                NC.manager.QueueVideo(stats.IsNewBest() ? NC.Settings.PBType.Value : NC.Settings.NoPBType.Value);
+                NC.manager.QueueVideo(stats.IsNewBest() ? NC.Settings.PBType.Value : NC.Settings.NoPBType.Value, stats.IsNewBest() ? "steam_star" : "steam_flag");
 
             return false;
         }
@@ -103,6 +106,11 @@ namespace NeonCapture
 
         static public bool WaitingForRecord()
         {
+            if (NC.Settings.UseSteam.Value)
+            {
+                SteamTimeline.SetTimelineGameMode(ETimelineGameMode.k_ETimelineGameMode_Playing);
+                return false;
+            }
             if (!NC.manager || !NC.manager.ready || !NC.Settings.EnableRecord.Value || !NC.Settings.StallLoad.Value) return false;
             return !NC.manager.recording;
         }
