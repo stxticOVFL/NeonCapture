@@ -48,6 +48,9 @@
     <Reference Include="MelonPrefManager.Mono">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Neon White\Mods\MelonPrefManager.Mono.dll</HintPath>
     </Reference>
+    <Reference Include="NeonLite">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Neon White\Mods\NeonLite.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />

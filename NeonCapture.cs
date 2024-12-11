@@ -11,6 +11,7 @@ namespace NeonCapture
         public static CaptureManager manager = null;
         public override void OnLateInitializeMelon()
         {
+            NeonLite.NeonLite.LoadModules(MelonAssembly);
             Harmony = new("NeonCapture");
             Settings.Register();
             if (Settings.Enabled.Value)

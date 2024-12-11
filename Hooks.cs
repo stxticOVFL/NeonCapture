@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using NeonLite.Modules;
 using UnityEngine;
 using NC = NeonCapture.NeonCapture;
 
@@ -10,14 +11,19 @@ using NC = NeonCapture.NeonCapture;
 namespace NeonCapture
 {
     [HarmonyPatch]
-    public class Hooks
+    public class Hooks : IModule
     {
+#pragma warning disable CS0414
+        const bool priority = true;
+        const bool active = true;
+        static void Setup() { }
+        static void Activate(bool _) { }
+
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(LevelData), typeof(bool), typeof(bool))]
         private static void PlayLevel(LevelData newLevel, bool fromRestart)
         {
             if (!NC.manager || !NC.manager.ready || !newLevel || !NC.Settings.EnableRecord.Value) return;
-
             if (newLevel.type == LevelData.LevelType.None || newLevel.type == LevelData.LevelType.Hub)
             {
                 if (NC.manager.recording)
@@ -101,41 +107,14 @@ namespace NeonCapture
             return changed;
         }
 
-        static public bool WaitingForRecord()
+        internal static bool showWaiting;
+        static public bool OnLevelLoad(LevelData level)
         {
-            if (!NC.manager || !NC.manager.ready || !NC.Settings.EnableRecord.Value || !NC.Settings.StallLoad.Value) return false;
-            return !NC.manager.recording;
-        }
 
-        [HarmonyTranspiler]
-        [HarmonyPatch(typeof(Game), "LevelSetupRoutine", MethodType.Enumerator)]
-        static IEnumerable<CodeInstruction> LevelSetupPatch(IEnumerable<CodeInstruction> instructions)
-        {
-            int index = 0;
-            var rmUI = AccessTools.Field(typeof(RM), "ui");
-            CodeInstruction branch = null;
-            foreach (var (code, i) in instructions.Select((value, i) => (value, i)))
-            {
-                // find first (and only) RM.ui reference
-                if (code.LoadsField(rmUI))
-                {
-                    index = i + 3; // keep track of the instruction 3 *after* (it's a branch)
-                    break;
-                }
-            }
-
-            foreach (var (code, i) in instructions.Select((value, i) => (value, i)))
-            {
-                if (i == index) // if we're that index we kept trakcof earlier
-                    branch = code; // remember it, we'll be borrowing it on:
-                else if (branch != null) // the very next instruction
-                {
-                    yield return CodeInstruction.Call(() => WaitingForRecord()); // call waitforrecord, pushing it directly on the stack
-                    yield return branch; // same branch from earlier, branch if true to spinning
-                    branch = null;
-                }
-                yield return code;
-            }
+            if (!level || level.type == LevelData.LevelType.Hub || !NC.manager || !NC.manager.ready || !NC.Settings.EnableRecord.Value || !NC.Settings.StallLoad.Value) return true;
+            if (showWaiting)
+                NC.manager.SetStatus("Waiting for OBS...");
+            return NC.manager.recording;
         }
     }
 }

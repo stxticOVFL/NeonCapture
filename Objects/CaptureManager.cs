@@ -94,7 +94,7 @@ namespace NeonCapture.Objects
 
         TextMeshProUGUI statusText;
         Color statusColor = Color.white;
-        float statusTimer = -1;
+        public float statusTimer = -1;
 
         public bool ready = false;
 
@@ -228,7 +228,7 @@ namespace NeonCapture.Objects
         public void SendStartRecord()
         {
             if (Settings.StallLoad.Value)
-                SetStatus("Waiting for OBS...");
+                Hooks.showWaiting = true;
             else
                 ClearStatus();
             Send(PrepareRequest("StartRecord")); 
@@ -358,6 +358,7 @@ namespace NeonCapture.Objects
 
         public void ClearStatus()
         {
+            Hooks.showWaiting = false;
             _moveY.goal = _moveY.result = 20;
             _moveY.time = 0;
             _moveY.running = false;
