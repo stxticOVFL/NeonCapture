@@ -67,7 +67,18 @@ namespace NeonCapture
             if (__instance.Unlocked)
                 return;
             if (NC.Settings.OnDNF.Value && NC.manager.recording && NC.manager.queuedPath == null)
+            {
+                if(NC.Settings.OnPBDNF.Value)
+                {
+                    Game game = Singleton<Game>.Instance;
+                    var stats = GameDataManager.levelStats[game.GetCurrentLevel().levelID];
+
+                    if(NC.manager.time < stats._timeBestMicroseconds)
+                        NC.manager.QueueVideo(NC.Settings.DNFType.Value);
+                }
+                else
                 NC.manager.QueueVideo(NC.Settings.DNFType.Value);
+        }
         }
 
         static bool LevelCompleteOverride()
