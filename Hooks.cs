@@ -63,9 +63,11 @@ namespace NeonCapture
         private static void OnTriggerStay(ref LevelGate __instance)
         {
             if (!NC.manager || !NC.manager.ready) return;
-            NC.manager.time = Singleton<Game>.Instance.GetCurrentLevelTimerMicroseconds();
+            
             if (__instance.Unlocked)
                 return;
+
+            NC.manager.time = Singleton<Game>.Instance.GetCurrentLevelTimerMicroseconds();
             if (NC.Settings.OnDNF.Value && NC.manager.recording && NC.manager.queuedPath == null)
             {
                 if(NC.Settings.OnPBDNF.Value)
@@ -75,10 +77,10 @@ namespace NeonCapture
 
                     if(NC.manager.time < stats._timeBestMicroseconds)
                         NC.manager.QueueVideo(NC.Settings.DNFType.Value);
-                }
+                } 
                 else
-                NC.manager.QueueVideo(NC.Settings.DNFType.Value);
-        }
+                    NC.manager.QueueVideo(NC.Settings.DNFType.Value);
+            }
         }
 
         static bool LevelCompleteOverride()
