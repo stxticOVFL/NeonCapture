@@ -51,6 +51,7 @@ namespace NeonCapture
             public static MelonPreferences_Entry<string> ManualType;
 
             public static MelonPreferences_Entry<bool> OnDNF;
+            public static MelonPreferences_Entry<bool> OnPBDNF;
             public static MelonPreferences_Entry<bool> OnRestart;
             public static MelonPreferences_Entry<bool> NonPBs;
             public static MelonPreferences_Entry<int> AutoSeconds;
@@ -72,6 +73,7 @@ namespace NeonCapture
                 StartAlert = MainCategory.CreateEntry("Start Recording Notification", false);
                 AutoAlert = MainCategory.CreateEntry("Auto-save Notification", true);
                 OnDNF = MainCategory.CreateEntry("Save recording on DNF", true);
+                OnPBDNF = MainCategory.CreateEntry("Save recording on DNF PB", true, description: "Saves DNF runs only if they were PBs");
                 NonPBs = MainCategory.CreateEntry("Save recording on non-PBs", false);
                 OnRestart = MainCategory.CreateEntry("Save recording on all restarts", false);
 
