@@ -267,7 +267,13 @@ namespace NeonCapture.Objects
                             newFile.Append(Singleton<Game>.Instance.GetCurrentLevel().levelID);
                             break;
                         case 'L':
-                            newFile.Append(LocalizationManager.GetTranslation(Singleton<Game>.Instance.GetCurrentLevel().GetLevelDisplayName()));
+                            var display = Singleton<Game>.Instance.GetCurrentLevel().GetLevelDisplayName();
+                            var local = LocalizationManager.GetTranslation(display);
+                            if (string.IsNullOrEmpty(local))
+                                local = display;
+                            if (string.IsNullOrEmpty(local))
+                                goto case 'l';
+                            newFile.Append(local);
                             break;
                         case 't':
                             newFile.Append(time);

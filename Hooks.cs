@@ -5,19 +5,25 @@ using HarmonyLib;
 using NeonLite.Modules;
 using UnityEngine;
 using NC = NeonCapture.NeonCapture;
+using EnsureTimer = NeonLite.Modules.Optimization.EnsureTimer;
+using System.Reflection;
+
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
 namespace NeonCapture
 {
-    [HarmonyPatch]
+    //[HarmonyPatch]
     public class Hooks : IModule
     {
 #pragma warning disable CS0414
         const bool priority = true;
         const bool active = true;
         static void Setup() { }
-        static void Activate(bool _) { }
+        static void Activate(bool _)
+        {
+            NeonLite.Patching.PerformHarmonyPatches(typeof(Hooks));
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(LevelData), typeof(bool), typeof(bool))]
@@ -58,26 +64,30 @@ namespace NeonCapture
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(string), typeof(bool), typeof(Action))]
         private static void PlayLevel(string newLevelID) => PlayLevel(Singleton<Game>.Instance.GetGameData().GetLevelData(newLevelID), false);
 
+
+        // todo: oops
+        static readonly FieldInfo cOverride = NeonLite.Helpers.Field(typeof(EnsureTimer), "cOverride");
         [HarmonyPostfix]
         [HarmonyPatch(typeof(LevelGate), "OnTriggerStay")]
         private static void OnTriggerStay(ref LevelGate __instance)
         {
             if (!NC.manager || !NC.manager.ready) return;
-            
-            if (__instance.Unlocked)
-                return;
 
-            NC.manager.time = Singleton<Game>.Instance.GetCurrentLevelTimerMicroseconds();
+            if (__instance.Unlocked)
+                return; 
+
+            var c = (Collider)cOverride.GetValue(null);
+            NC.manager.time = EnsureTimer.CalculateOffset(c ?? __instance.GetComponentInChildren<MeshCollider>());
             if (NC.Settings.OnDNF.Value && NC.manager.recording && NC.manager.queuedPath == null)
             {
-                if(NC.Settings.OnPBDNF.Value)
+                if (NC.Settings.OnPBDNF.Value)
                 {
                     Game game = Singleton<Game>.Instance;
                     var stats = GameDataManager.levelStats[game.GetCurrentLevel().levelID];
 
-                    if(NC.manager.time < stats._timeBestMicroseconds)
+                    if (NC.manager.time < stats._timeBestMicroseconds)
                         NC.manager.QueueVideo(NC.Settings.DNFType.Value);
-                } 
+                }
                 else
                     NC.manager.QueueVideo(NC.Settings.DNFType.Value);
             }
