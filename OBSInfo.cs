@@ -30,7 +30,17 @@ namespace NeonCapture
             AuthenticationFailed = 4009,
             UnsupportedRpcVersion = 4010,
             SessionInvalidated = 4011,
-            UnsupportedFeature = 4012
+            UnsupportedFeature = 4012,
+
+            // websocket
+            NormalClosure = 1000,
+            GoingAway = 1001,
+            ProtocolError = 1002,
+            UnsupportedDataType = 1003,
+            NoStatusReceived = 1005,
+            AbnormalClosure = 1006,
+            InternalServerError = 1011
+
         }
         public enum RequestStatus
         {
