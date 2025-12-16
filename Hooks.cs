@@ -62,6 +62,16 @@ namespace NeonCapture
         }
 
         [HarmonyPrefix]
+        [HarmonyPatch(typeof(Game), "QuitToTitle")]
+        static void PreTitle()
+        {
+            if (!NC.handler || !NC.handler.ready) return;
+
+            if (NC.handler.CheckStatus(Handler.RecordStatus.Starting))
+                NC.handler.DiscardVideo(false); // discard and fully stop recording
+        }
+
+        [HarmonyPrefix]
         [HarmonyPatch(typeof(Game), "PlayLevel", typeof(string), typeof(bool), typeof(Action))]
         private static void PlayLevel(string newLevelID) => PlayLevel(Singleton<Game>.Instance.GetGameData().GetLevelData(newLevelID), false);
 

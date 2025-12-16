@@ -87,7 +87,6 @@ namespace NeonCapture
             public static MelonPreferences_Entry<bool> StartAlert;
             public static MelonPreferences_Entry<bool> AutoAlert;
 
-
             public static MelonPreferences_Entry<bool> SplitFile;
             public static MelonPreferences_Entry<int> MaxDiscards;
 
