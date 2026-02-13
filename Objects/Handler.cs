@@ -1,14 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using UnityEngine;
-using MelonLoader.TinyJSON;
 using I2.Loc;
-using Settings = NeonCapture.NeonCapture.Settings;
+using MelonLoader.TinyJSON;
+using UnityEngine;
 using static NeonCapture.OBSInfo;
+using Settings = NeonCapture.NeonCapture.Settings;
 
 namespace NeonCapture.Objects
 {
@@ -123,7 +119,7 @@ namespace NeonCapture.Objects
                 waitingStatus = WaitingStatus.Nothing;
 
                 NeonCapture.Log.Msg("Trying to send closing packets..");
-                Awaiter.Send(packet); // hope this sent 
+                Awaiter.Send(packet); // hope this sent
 
                 // manually have this instead of using fileIO
                 int tries = 20;

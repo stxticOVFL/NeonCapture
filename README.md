@@ -47,21 +47,12 @@ Once you restart your game, you should see "**Successfully identified with OBS!*
 ![image](https://github.com/stxticOVFL/NeonCapture/assets/29069561/a8b25fcb-edc3-46cb-bc4b-5ffb223e7dde)
 
 ## Building & Contributing
-This project uses Visual Studio 2022 as its project manager. When opening the Visual Studio solution, ensure your references are corrected by right clicking and selecting `Add Reference...` as shown below. 
-Most will be in `Neon White_data/Managed`. Some will be in `MelonLoader/net35`, **not** `net6`. Select the `MelonPrefManager` and `UniverseLib` mods for those references. 
-If you get any weird errors, try deleting the references and re-adding them manually.
+This project is based on [**NWCommon.**](https://github.com/stxticOVFL/NWCommon/tree/master?tab=readme-ov-file) 
+Follow the build instructions on the repository.
 
-![image](https://github.com/stxticOVFL/NeonCapture/assets/29069561/67c946de-2099-458d-8dec-44e81883e613)
-
-Once your references are correct, build using the keybind or like the picture below.
-
-![image](https://github.com/stxticOVFL/EventTracker/assets/29069561/40a50e46-5fc2-4acc-a3c9-4d4edb8c7d83)
-
-Make any edits as needed, and make a PR for review. PRs are very appreciated.
+Make any edits as needed, and make a PR for review. PRs are very appreciated!
 
 ## Example Recording
 Note your milage may vary based on your OBS setup, hardware, and more. NeonCapture only tells OBS when to start and stop.
 
 https://github.com/stxticOVFL/NeonCapture/assets/29069561/55daafc5-92cf-4ed8-8a5b-b47c10e655bf
-
-

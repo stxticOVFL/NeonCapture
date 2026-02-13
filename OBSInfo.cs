@@ -1,4 +1,3 @@
-
 namespace NeonCapture
 {
     public static class OBSInfo

@@ -33,7 +33,7 @@ namespace NeonCapture
         {
             handler = new GameObject("NeonCapture", typeof(Handler), typeof(FileIO), typeof(StatusText)).GetComponent<Handler>();
             handler.gameObject.AddComponent<Scheduler>();
-            Object.DontDestroyOnLoad(handler.gameObject);
+            GameObject.DontDestroyOnLoad(handler.gameObject);
         }
 
         public override void OnUpdate()
@@ -45,9 +45,10 @@ namespace NeonCapture
                 if (!handler.ready)
                 {
                     StatusText.i.SetStatus("Looking for OBS...");
-                    Object.Destroy(Awaiter.i);
+                    GameObject.Destroy(Awaiter.i);
                 }
-                else if (Singleton<Game>.Instance.GetCurrentLevelType() != LevelData.LevelType.Hub) {
+                else if (Singleton<Game>.Instance.GetCurrentLevelType() != LevelData.LevelType.Hub)
+                {
                     if (handler.usedBonus == null)
                     {
                         handler.usedBonus ??= Settings.ManualType.Value;
@@ -93,7 +94,7 @@ namespace NeonCapture
             public static void Register()
             {
                 NeonLite.Settings.AddHolder(h);
-                
+
                 Enabled = NeonLite.Settings.Add(h, "", "enabled", "Enabled", null, false);
 #if DEBUG
                 Debug = NeonLite.Settings.Add(h, "", "debug", "Debug Mode", null, true, true);
@@ -138,7 +139,7 @@ namespace NeonCapture
                 GhostDir = NeonLite.Settings.Add(h, "Output", "ghostDir", "Use Ghost Directory", "Whether or not to place new recordings in their respective ghost directories or to keep the current video directory.", false);
 
 
-                // check for migration  
+                // check for migration
                 var category = MelonPreferences.CreateCategory("NeonCapture");
                 var migrated = category.CreateEntry("MIGRATED", false, is_hidden: true).Value;
                 if (!migrated)
@@ -163,7 +164,7 @@ namespace NeonCapture
                     ManualType.Value = category.CreateOrFind("Manual Format String", "Manual", true).Value;
                     GhostDir.Value = category.CreateOrFind("Use Ghost Directory", false, true).Value;
                     EarlyFinish.Value = category.CreateOrFind("Early Finish Key", KeyCode.Semicolon, true).Value;
-                    
+
                     //MelonPreferences.Categories.Remove(category);
                 }
             }

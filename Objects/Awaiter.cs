@@ -1,12 +1,6 @@
-﻿using MelonLoader.TinyJSON;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Sockets;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using MelonLoader.TinyJSON;
 using UnityEngine;
 using static NeonCapture.Objects.Handler;
 
@@ -56,7 +50,7 @@ namespace NeonCapture.Objects
             }
 
             await Connect(uri);
-            i = this;   
+            i = this;
 
             var sender = Task.Run(Sender);
 

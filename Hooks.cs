@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using HarmonyLib;
+﻿using HarmonyLib;
 using NeonLite.Modules;
 using UnityEngine;
 using NC = NeonCapture.NeonCapture;
@@ -20,7 +17,7 @@ namespace NeonCapture
         static void Setup() { }
         static void Activate(bool _)
         {
-            NeonLite.Patching.PerformHarmonyPatches(typeof(Hooks));
+            Patching.PerformHarmonyPatches(typeof(Hooks));
         }
 
         [HarmonyPrefix]
@@ -111,7 +108,7 @@ namespace NeonCapture
             var stats = GameDataManager.levelStats[game.GetCurrentLevel().levelID];
 
             NC.handler.time = stats._timeLastMicroseconds;
-            
+
             // this happens no matter what queued path is
             NC.handler.QueueVideo(stats.IsNewBest() ? NC.Settings.PBType.Value : NC.Settings.NoPBType.Value, !NC.Settings.NonPBs.Value && !stats.IsNewBest());
 
