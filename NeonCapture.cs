@@ -123,8 +123,11 @@ namespace NeonCapture
                 OutputFile = NeonLite.Settings.Add(h, "Output", "format", "Output File Format", """
                 What to name the output file. The file extension will be automatically added. The format is as follows:
                 %% - Actual %
+                %i - Level number, e.g. 1 for Take Flight
                 %l - Unlocalized level name, e.g. GRID_PORT
                 %L - Localized level name, e.g. Glass Port
+                %m - Mission number, e.g. 1 for Rebirth
+                %M - Mission name, e.g Rebirth
                 %t - Pure time in microseconds, e.g. 80030999
                 %T - Time in just seconds + milliseconds, e.g. 80.030
                 %D - Formatted date/time, e.g. 2024-03-31 21-50-17
