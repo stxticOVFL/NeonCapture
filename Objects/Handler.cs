@@ -171,7 +171,7 @@ namespace NeonCapture.Objects
             Awaiter.Send(PrepareRequest("StartRecord"));
         }
 
-        static readonly char[] replacements = ['%', 'l', 'L', 't', 'T', 'm', 'd', 'D', 'B'];
+        static readonly char[] replacements = ['%', 'i', 'l', 'L', 't', 'T', 'm', 'M', 'd', 'D', 'B'];
         static readonly StringBuilder newFile = new();
 
         public void QueueVideo(string bonus = null, bool skipAuto = false)
@@ -203,6 +203,9 @@ namespace NeonCapture.Objects
                         case '%':
                             newFile.Append("%");
                             break;
+                        case 'i':
+                            newFile.Append(Singleton<Game>.Instance.GetGameData().GetLevelInformation(level).levelIndex + 1);
+                            break;
                         case 'l':
                             newFile.Append(Singleton<Game>.Instance.GetCurrentLevel().levelID);
                             break;
@@ -214,6 +217,16 @@ namespace NeonCapture.Objects
                             if (string.IsNullOrEmpty(local))
                                 goto case 'l';
                             newFile.Append(local);
+                            break;
+                        case 'm':
+                            newFile.Append(Singleton<Game>.Instance.GetGameData().GetLevelInformation(level).mission + 1);
+                            break;
+                        case 'M':
+                            var missionId = Singleton<Game>.Instance.GetGameData().GetLevelInformation(level).mission + 1;
+                            var localMission = LocalizationManager.GetTranslation($"Interface/MISSION_{missionId.ToString("D2")}_TITLE");
+                            if (string.IsNullOrEmpty(localMission))
+                                goto case 'm';
+                            newFile.Append(localMission);
                             break;
                         case 't':
                             newFile.Append(time);
